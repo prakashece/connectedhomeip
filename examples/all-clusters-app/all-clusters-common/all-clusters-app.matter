@@ -2785,6 +2785,56 @@ cluster BooleanState = 69 {
   readonly attribute int16u clusterRevision = 65533;
 }
 
+/** This cluster supports remotely monitoring and, where supported, changing the operational state of an Oven. */
+server cluster OvenOperationalState = 72 {
+  enum ErrorStateEnum : enum8 {
+    kNoError = 0;
+    kUnableToStartOrResume = 1;
+    kUnableToCompleteOperation = 2;
+    kCommandInvalidInState = 3;
+  }
+
+  enum OperationalStateEnum : enum8 {
+    kPreheating = 64;
+    kPreheated = 65;
+    kCoolingDown = 66;
+    kSelfCleaning = 67;
+  }
+
+  struct ErrorStateStruct {
+    enum8 errorStateID = 0;
+    optional char_string<64> errorStateLabel = 1;
+    optional char_string<64> errorStateDetails = 2;
+  }
+
+  struct OperationalStateStruct {
+    enum8 operationalStateID = 0;
+    optional char_string<64> operationalStateLabel = 1;
+  }
+
+  critical event OperationalError = 0 {
+    ErrorStateStruct errorState = 0;
+  }
+
+  info event OperationCompletion = 1 {
+    enum8 completionErrorCode = 0;
+    optional nullable elapsed_s totalOperationalTime = 1;
+    optional nullable elapsed_s pausedTime = 2;
+  }
+
+  readonly attribute nullable char_string phaseList[] = 0;
+  readonly attribute nullable int8u currentPhase = 1;
+  readonly attribute OperationalStateStruct operationalStateList[] = 3;
+  readonly attribute enum8 operationalState = 4;
+  readonly attribute ErrorStateStruct operationalError = 5;
+  readonly attribute command_id generatedCommandList[] = 65528;
+  readonly attribute command_id acceptedCommandList[] = 65529;
+  readonly attribute event_id eventList[] = 65530;
+  readonly attribute attrib_id attributeList[] = 65531;
+  readonly attribute bitmap32 featureMap = 65532;
+  readonly attribute int16u clusterRevision = 65533;
+}
+
 /** Attributes and commands for selecting a mode from a list of supported options. */
 cluster ModeSelect = 80 {
   revision 2;
@@ -6682,6 +6732,20 @@ endpoint 1 {
 
   server cluster BooleanState {
     ram      attribute stateValue default = 0;
+    ram      attribute featureMap default = 0;
+    ram      attribute clusterRevision default = 1;
+  }
+
+  server cluster OvenOperationalState {
+    callback attribute phaseList;
+    callback attribute currentPhase;
+    callback attribute operationalStateList;
+    callback attribute operationalState;
+    callback attribute operationalError;
+    callback attribute generatedCommandList;
+    callback attribute acceptedCommandList;
+    callback attribute eventList;
+    callback attribute attributeList;
     ram      attribute featureMap default = 0;
     ram      attribute clusterRevision default = 1;
   }
